@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Files</title>
+  </head>
+  <body>
+    <h1>File List</h1>
+
+    <p><a href="/home">Back to Home</a></p>
+
+    <table border="1" cellpadding="8">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Original Name</th>
+          <th>Stored Name</th>
+          <th>Content Type</th>
+          <th>Size</th>
+          <th>Storage Path</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:if="${#lists.isEmpty(files)}">
+          <td colspan="7">No files found.</td>
+        </tr>
+        <tr th:each="file : ${files}">
+          <td th:text="${file.id}"></td>
+          <td th:text="${file.originalName}"></td>
+          <td th:text="${file.storedName}"></td>
+          <td th:text="${file.contentType}"></td>
+          <td th:text="${file.size}"></td>
+          <td th:text="${file.storagePath}"></td>
+          <td th:text="${file.createdAt}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

@@ -13,7 +13,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/home").permitAll()
+                .requestMatchers("/home", "/files").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(Customizer.withDefaults());
