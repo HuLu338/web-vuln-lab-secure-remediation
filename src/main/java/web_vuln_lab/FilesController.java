@@ -8,10 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import web_vuln_lab.entity.FileRecord;
 import web_vuln_lab.entity.User;
@@ -40,20 +37,25 @@ public class FilesController {
     }
 
     @GetMapping("/files")
-    public String files(Model model) {
-        model.addAttribute("files", fileRecordRepository.findAll());
+    public String files(@RequestParam(defaultValue = "alice") String user, Model model) {
+        User currentUser = userRepository.findByUsername(user)
+                .orElseThrow(() -> new RuntimeException("User not found: " + user));
+
+        model.addAttribute("currentUser", currentUser.getUsername());
+        model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
         return "files";
     }
 
     @PostMapping("/files/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file) {
+    public String uploadFile(@RequestParam("file") MultipartFile file,
+                             @RequestParam("user") String user) {
         try {
             if (file.isEmpty()) {
-                return "redirect:/files";
+                return "redirect:/files?user=" + user;
             }
 
-            User user = userRepository.findByUsername("testuser")
-                    .orElseThrow(() -> new RuntimeException("Test user not found"));
+            User currentUser = userRepository.findByUsername(user)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + user));
 
             String originalName = file.getOriginalFilename();
             if (originalName == null || originalName.isBlank()) {
@@ -69,7 +71,7 @@ public class FilesController {
             file.transferTo(targetPath.toFile());
 
             FileRecord fileRecord = new FileRecord();
-            fileRecord.setOwner(user);
+            fileRecord.setOwner(currentUser);
             fileRecord.setOriginalName(originalName);
             fileRecord.setStoredName(storedName);
             fileRecord.setContentType(file.getContentType());
@@ -79,13 +81,14 @@ public class FilesController {
 
             fileRecordRepository.save(fileRecord);
 
-            return "redirect:/files";
+            return "redirect:/files?user=" + user;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Upload failed: " + e.getMessage(), e);
         }
     }
 
+    // 故意保留脆弱逻辑：只按文件 id 下载，不校验 owner
     @GetMapping("/files/download/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id) throws IOException {
         FileRecord fileRecord = fileRecordRepository.findById(id)
@@ -110,8 +113,10 @@ public class FilesController {
                 .body(resource);
     }
 
+    // 故意保留脆弱逻辑：只按文件 id 删除，不校验 owner
     @PostMapping("/files/delete/{id}")
-    public String deleteFile(@PathVariable Long id) throws IOException {
+    public String deleteFile(@PathVariable Long id,
+                             @RequestParam("user") String user) throws IOException {
         FileRecord fileRecord = fileRecordRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("File record not found"));
 
@@ -120,6 +125,6 @@ public class FilesController {
 
         fileRecordRepository.delete(fileRecord);
 
-        return "redirect:/files";
+        return "redirect:/files?user=" + user;
     }
 }

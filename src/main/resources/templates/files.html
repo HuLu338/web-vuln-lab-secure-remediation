@@ -9,8 +9,20 @@
 
     <p><a href="/home">Back to Home</a></p>
 
+    <p>
+      Current user:
+      <strong th:text="${currentUser}"></strong>
+    </p>
+
+    <p>
+      Switch user:
+      <a href="/files?user=alice">Alice</a> |
+      <a href="/files?user=bob">Bob</a>
+    </p>
+
     <h2>Upload File</h2>
     <form action="/files/upload" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="user" th:value="${currentUser}" />
       <input type="file" name="file" required />
       <button type="submit">Upload</button>
     </form>
@@ -44,11 +56,13 @@
           <td th:text="${file.createdAt}"></td>
           <td>
             <a th:href="@{/files/download/{id}(id=${file.id})}">Download</a>
+
             <form
               th:action="@{/files/delete/{id}(id=${file.id})}"
               method="post"
               style="display: inline"
             >
+              <input type="hidden" name="user" th:value="${currentUser}" />
               <button type="submit">Delete</button>
             </form>
           </td>
