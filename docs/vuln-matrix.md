@@ -129,3 +129,17 @@ The application now renders comment content using escaped output instead of unes
 ### Result
 
 Stored script content is displayed as plain text and is no longer executed by the browser.
+
+## Audit Logging
+
+### Implemented Events
+
+- UPLOAD_FILE
+- DOWNLOAD_FILE
+- DELETE_FILE
+- DOWNLOAD_FILE_DENIED
+- DELETE_FILE_DENIED
+
+### Security Value
+
+The system records both successful sensitive operations and denied unauthorized attempts, which improves traceability and supports security monitoring.
