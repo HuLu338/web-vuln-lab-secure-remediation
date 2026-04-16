@@ -55,7 +55,10 @@
           <td th:text="${file.storagePath}"></td>
           <td th:text="${file.createdAt}"></td>
           <td>
-            <a th:href="@{/files/download/{id}(id=${file.id})}">Download</a>
+            <a
+              th:href="@{/files/download/{id}(id=${file.id}, user=${currentUser})}"
+              >Download</a
+            >
 
             <form
               th:action="@{/files/delete/{id}(id=${file.id})}"

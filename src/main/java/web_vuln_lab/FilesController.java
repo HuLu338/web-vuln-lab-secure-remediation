@@ -6,10 +6,12 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import web_vuln_lab.entity.FileRecord;
 import web_vuln_lab.entity.User;
 import web_vuln_lab.repository.FileRecordRepository;
@@ -38,8 +40,7 @@ public class FilesController {
 
     @GetMapping("/files")
     public String files(@RequestParam(defaultValue = "alice") String user, Model model) {
-        User currentUser = userRepository.findByUsername(user)
-                .orElseThrow(() -> new RuntimeException("User not found: " + user));
+        User currentUser = getCurrentUser(user);
 
         model.addAttribute("currentUser", currentUser.getUsername());
         model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
@@ -54,8 +55,7 @@ public class FilesController {
                 return "redirect:/files?user=" + user;
             }
 
-            User currentUser = userRepository.findByUsername(user)
-                    .orElseThrow(() -> new RuntimeException("User not found: " + user));
+            User currentUser = getCurrentUser(user);
 
             String originalName = file.getOriginalFilename();
             if (originalName == null || originalName.isBlank()) {
@@ -88,37 +88,43 @@ public class FilesController {
         }
     }
 
-    // 故意保留脆弱逻辑：只按文件 id 下载，不校验 owner
     @GetMapping("/files/download/{id}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) throws IOException {
-        FileRecord fileRecord = fileRecordRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("File record not found"));
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id,
+                                                 @RequestParam("user") String user) {
+        try {
+            User currentUser = getCurrentUser(user);
+            FileRecord fileRecord = getAuthorizedFile(currentUser, id);
 
-        Path filePath = Paths.get(fileRecord.getStoragePath()).toAbsolutePath().normalize();
-        Resource resource = new UrlResource(filePath.toUri());
+            Path filePath = Paths.get(fileRecord.getStoragePath()).toAbsolutePath().normalize();
+            Resource resource = new UrlResource(filePath.toUri());
 
-        if (!resource.exists() || !resource.isReadable()) {
-            throw new RuntimeException("File not found or not readable");
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("File not found or not readable: " + filePath);
+            }
+
+            String downloadName = fileRecord.getOriginalName();
+            if (downloadName == null || downloadName.isBlank()) {
+                downloadName = "download-file";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + downloadName.replace("\"", "") + "\"")
+                    .body(resource);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Download failed: " + e.getMessage(), e);
         }
-
-        String contentType = fileRecord.getContentType();
-        if (contentType == null || contentType.isBlank()) {
-            contentType = "application/octet-stream";
-        }
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + fileRecord.getOriginalName() + "\"")
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(resource);
     }
 
-    // 故意保留脆弱逻辑：只按文件 id 删除，不校验 owner
     @PostMapping("/files/delete/{id}")
     public String deleteFile(@PathVariable Long id,
                              @RequestParam("user") String user) throws IOException {
-        FileRecord fileRecord = fileRecordRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("File record not found"));
+        User currentUser = getCurrentUser(user);
+        FileRecord fileRecord = getAuthorizedFile(currentUser, id);
 
         Path filePath = Paths.get(fileRecord.getStoragePath()).toAbsolutePath().normalize();
         Files.deleteIfExists(filePath);
@@ -126,5 +132,25 @@ public class FilesController {
         fileRecordRepository.delete(fileRecord);
 
         return "redirect:/files?user=" + user;
+    }
+
+    private User getCurrentUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found: " + username));
+    }
+
+    private FileRecord getAuthorizedFile(User currentUser, Long fileId) {
+        FileRecord fileRecord = fileRecordRepository.findById(fileId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "File record not found: " + fileId));
+
+        if (!fileRecord.getOwner().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You are not allowed to access this file");
+        }
+
+        return fileRecord;
     }
 }
