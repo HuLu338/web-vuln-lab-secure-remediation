@@ -29,6 +29,8 @@ public class FilesController {
 
     private final FileRecordRepository fileRecordRepository;
     private final UserRepository userRepository;
+    private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    private static final String[] ALLOWED_EXTENSIONS = {".txt", ".pdf", ".png", ".jpg", ".jpeg"};
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -48,45 +50,66 @@ public class FilesController {
     }
 
     @PostMapping("/files/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file,
-                             @RequestParam("user") String user) {
-        try {
-            if (file.isEmpty()) {
-                return "redirect:/files?user=" + user;
-            }
+public String uploadFile(@RequestParam("file") MultipartFile file,
+                         @RequestParam("user") String user,
+                         Model model) {
+    try {
+        User currentUser = getCurrentUser(user);
 
-            User currentUser = getCurrentUser(user);
-
-            String originalName = file.getOriginalFilename();
-            if (originalName == null || originalName.isBlank()) {
-                originalName = "unknown-file";
-            }
-
-            String storedName = UUID.randomUUID() + "-" + originalName;
-
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-            Files.createDirectories(uploadPath);
-
-            Path targetPath = uploadPath.resolve(storedName);
-            file.transferTo(targetPath.toFile());
-
-            FileRecord fileRecord = new FileRecord();
-            fileRecord.setOwner(currentUser);
-            fileRecord.setOriginalName(originalName);
-            fileRecord.setStoredName(storedName);
-            fileRecord.setContentType(file.getContentType());
-            fileRecord.setSize(file.getSize());
-            fileRecord.setStoragePath(targetPath.toString());
-            fileRecord.setCreatedAt(LocalDateTime.now());
-
-            fileRecordRepository.save(fileRecord);
-
-            return "redirect:/files?user=" + user;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Upload failed: " + e.getMessage(), e);
+        if (file.isEmpty()) {
+            model.addAttribute("currentUser", currentUser.getUsername());
+            model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
+            model.addAttribute("errorMessage", "Please choose a file.");
+            return "files";
         }
+
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || originalName.isBlank()) {
+            model.addAttribute("currentUser", currentUser.getUsername());
+            model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
+            model.addAttribute("errorMessage", "Invalid file name.");
+            return "files";
+        }
+
+        if (!isAllowedExtension(originalName)) {
+            model.addAttribute("currentUser", currentUser.getUsername());
+            model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
+            model.addAttribute("errorMessage", "File type not allowed. Only txt, pdf, png, jpg, jpeg are allowed.");
+            return "files";
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            model.addAttribute("currentUser", currentUser.getUsername());
+            model.addAttribute("files", fileRecordRepository.findByOwner_Id(currentUser.getId()));
+            model.addAttribute("errorMessage", "File is too large. Maximum size is 2MB.");
+            return "files";
+        }
+
+        String storedName = UUID.randomUUID() + "-" + originalName;
+
+        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Files.createDirectories(uploadPath);
+
+        Path targetPath = uploadPath.resolve(storedName);
+        file.transferTo(targetPath.toFile());
+
+        FileRecord fileRecord = new FileRecord();
+        fileRecord.setOwner(currentUser);
+        fileRecord.setOriginalName(originalName);
+        fileRecord.setStoredName(storedName);
+        fileRecord.setContentType(file.getContentType());
+        fileRecord.setSize(file.getSize());
+        fileRecord.setStoragePath(targetPath.toString());
+        fileRecord.setCreatedAt(LocalDateTime.now());
+
+        fileRecordRepository.save(fileRecord);
+
+        return "redirect:/files?user=" + user;
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException("Upload failed: " + e.getMessage(), e);
     }
+}
 
     @GetMapping("/files/download/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id,
@@ -153,4 +176,13 @@ public class FilesController {
 
         return fileRecord;
     }
+    private boolean isAllowedExtension(String filename) {
+    String lower = filename.toLowerCase();
+    for (String ext : ALLOWED_EXTENSIONS) {
+        if (lower.endsWith(ext)) {
+            return true;
+        }
+    }
+    return false;
+}
 }

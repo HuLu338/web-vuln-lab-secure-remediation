@@ -21,6 +21,8 @@
     </p>
 
     <h2>Upload File</h2>
+    <p th:if="${errorMessage}" th:text="${errorMessage}" style="color: red"></p>
+
     <form action="/files/upload" method="post" enctype="multipart/form-data">
       <input type="hidden" name="user" th:value="${currentUser}" />
       <input type="file" name="file" required />

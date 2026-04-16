@@ -56,3 +56,76 @@ The backend now verifies that the current user is the owner of the target file b
 - Unauthorized download now returns 403 Forbidden.
 - Unauthorized deletion now returns 403 Forbidden.
 - Users can only access their own files.
+
+## Insecure File Upload
+
+### Vulnerable Endpoint
+
+- POST /files/upload
+
+### Root Cause
+
+The backend accepts uploaded files without enforcing a strict allowlist of file extensions or content types.
+
+### Impact
+
+Users can upload unexpected file types that should not be accepted by the system.
+
+### Reproduction
+
+1. Open `/files?user=alice`.
+2. Upload a file with an unexpected type, such as `.html` or `.zip`.
+3. Observe that the system accepts the file, stores it on disk, and saves a record in the database.
+
+## Insecure File Upload - Remediation
+
+### Fix
+
+The backend now validates uploaded files using:
+
+- an extension allowlist
+- a maximum file size limit
+- invalid filename checks
+
+### Result
+
+- Unsupported file types are rejected
+- oversized files are rejected
+- only approved file types are stored in the system
+
+## Stored XSS
+
+### Vulnerable Endpoint
+
+- POST /comments
+- GET /comments
+
+### Root Cause
+
+The application renders stored comment content using unescaped output.
+
+### Impact
+
+An attacker can store malicious script content in a comment, and the script will execute when other users view the comments page.
+
+### Reproduction
+
+1. Open `/comments?user=alice`.
+2. Submit a comment containing `<script>alert('XSS')</script>`.
+3. Reload the comments page or open `/comments?user=bob`.
+4. Observe that the browser executes the stored script.
+
+## Stored XSS - Remediation
+
+### Fix
+
+The application now renders comment content using escaped output instead of unescaped HTML rendering.
+
+### Additional Protection
+
+- empty comments are rejected
+- overly long comments are rejected
+
+### Result
+
+Stored script content is displayed as plain text and is no longer executed by the browser.
