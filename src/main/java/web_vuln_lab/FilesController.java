@@ -30,21 +30,24 @@ public class FilesController {
 
     private static final long MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
     private static final String[] ALLOWED_EXTENSIONS = {".txt", ".pdf", ".png", ".jpg", ".jpeg"};
-
+    
     private final FileRecordRepository fileRecordRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final FileAccessService fileAccessService;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
 
     public FilesController(FileRecordRepository fileRecordRepository,
-                           UserRepository userRepository,
-                           AuditLogService auditLogService) {
-        this.fileRecordRepository = fileRecordRepository;
-        this.userRepository = userRepository;
-        this.auditLogService = auditLogService;
-    }
+                       UserRepository userRepository,
+                       AuditLogService auditLogService,
+                       FileAccessService fileAccessService) {
+    this.fileRecordRepository = fileRecordRepository;
+    this.userRepository = userRepository;
+    this.auditLogService = auditLogService;
+    this.fileAccessService = fileAccessService;
+}
 
     @GetMapping("/files")
     public String files(@RequestParam(defaultValue = "alice") String user, Model model) {
@@ -189,6 +192,38 @@ public class FilesController {
 
         return "redirect:/files?user=" + user;
     }
+
+@GetMapping("/vuln/files/{id}")
+@ResponseBody
+public FileResponseDto getFileVulnerable(@PathVariable Long id,
+                                         @RequestParam(defaultValue = "alice") String user) {
+    getCurrentUser(user); // 只检查用户是否存在
+
+    FileRecord file = fileAccessService.getFileVulnerable(id);
+    return toDto(file);
+}
+
+@GetMapping("/secure/files/{id}")
+@ResponseBody
+public FileResponseDto getFileSecure(@PathVariable Long id,
+                                     @RequestParam(defaultValue = "alice") String user) {
+    User currentUser = getCurrentUser(user);
+    FileRecord file = fileAccessService.getFileSecure(id, currentUser);
+    return toDto(file);
+}
+
+private FileResponseDto toDto(FileRecord file) {
+    return new FileResponseDto(
+            file.getId(),
+            file.getOriginalName(),
+            file.getStoredName(),
+            file.getContentType(),
+            file.getSize(),
+            file.getOwner().getId(),
+            file.getOwner().getUsername()
+    );
+}
+
 
     private User getCurrentUser(String username) {
         return userRepository.findByUsername(username)

@@ -21,7 +21,7 @@ public class User {
     private String passwordHash;
 
     @Column(nullable = false, length = 20)
-    private String role;
+    private String role = "USER";
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
