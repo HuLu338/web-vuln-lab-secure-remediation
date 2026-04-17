@@ -22,4 +22,7 @@ public class AuthorizationService {
 
         return file.getOwner().getId().equals(currentUser.getId());
     }
+    public boolean isAdmin(User currentUser) {
+    return currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+}
 }
