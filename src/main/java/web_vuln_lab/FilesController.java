@@ -196,20 +196,54 @@ public class FilesController {
 @GetMapping("/vuln/files/{id}")
 @ResponseBody
 public FileResponseDto getFileVulnerable(@PathVariable Long id,
-                                         @RequestParam(defaultValue = "alice") String user) {
-    getCurrentUser(user); // 只检查用户是否存在
+                                         @RequestParam(defaultValue = "alice") String user,
+                                         HttpServletRequest request) {
+    User currentUser = getCurrentUser(user);
 
     FileRecord file = fileAccessService.getFileVulnerable(id);
+
+    auditLogService.log(
+            currentUser,
+            "VULN_FILE_ACCESS",
+            "FILE",
+            file.getId(),
+            request.getRemoteAddr()
+    );
+
     return toDto(file);
 }
 
 @GetMapping("/secure/files/{id}")
 @ResponseBody
 public FileResponseDto getFileSecure(@PathVariable Long id,
-                                     @RequestParam(defaultValue = "alice") String user) {
+                                     @RequestParam(defaultValue = "alice") String user,
+                                     HttpServletRequest request) {
     User currentUser = getCurrentUser(user);
-    FileRecord file = fileAccessService.getFileSecure(id, currentUser);
-    return toDto(file);
+
+    try {
+        FileRecord file = fileAccessService.getFileSecure(id, currentUser);
+
+        auditLogService.log(
+                currentUser,
+                "SECURE_FILE_ACCESS_ALLOWED",
+                "FILE",
+                file.getId(),
+                request.getRemoteAddr()
+        );
+
+        return toDto(file);
+    } catch (ResponseStatusException e) {
+        if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+            auditLogService.log(
+                    currentUser,
+                    "SECURE_FILE_ACCESS_DENIED",
+                    "FILE",
+                    id,
+                    request.getRemoteAddr()
+            );
+        }
+        throw e;
+    }
 }
 
 private FileResponseDto toDto(FileRecord file) {

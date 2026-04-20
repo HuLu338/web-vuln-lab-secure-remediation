@@ -1,0 +1,70 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <title>Security Events</title>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      .nav {
+        margin-bottom: 20px;
+      }
+      .nav a {
+        margin-right: 15px;
+        text-decoration: none;
+        color: #0066cc;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Security Events</h1>
+
+    <div class="nav">
+      <a href="/audit-logs">All Audit Logs</a>
+      <a href="/security-events">Security Events</a>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Created At</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Target Type</th>
+          <th>Target ID</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="log : ${logs}">
+          <td th:text="${log.id}">1</td>
+          <td th:text="${log.createdAt}">2026-04-20T15:00:00</td>
+          <td th:text="${log.username}">alice</td>
+          <td th:text="${log.action}">ACTION</td>
+          <td th:text="${log.targetType}">FILE</td>
+          <td th:text="${log.targetId}">1</td>
+          <td th:text="${log.ip}">127.0.0.1</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
