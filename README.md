@@ -204,7 +204,7 @@ The automated tests cover:
 
 ### 1. Project Home Page
 
-![Project Home Page](screenshots/home.png)
+![Project Home Page](screenshots/home-page.png)
 
 ### 2. File Upload Validation
 
