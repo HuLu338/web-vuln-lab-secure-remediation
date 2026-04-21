@@ -1,94 +1,63 @@
-# Web Vuln Lab
+# Web Vuln Lab: Vulnerability Reproduction, Remediation, and Verification
 
-A mini web security lab built with Spring Boot and PostgreSQL.
+## Overview
 
-This project simulates a small cloud-file platform and demonstrates three common web security issues in a controlled local environment:
+Web Vuln Lab is a Java-based web security practice project built with Spring Boot, Thymeleaf, and PostgreSQL.
 
-- Broken Access Control
-- Insecure File Upload
-- Stored XSS
+The project demonstrates how common web application vulnerabilities can be reproduced, fixed, and verified in a controlled lab environment. It includes both vulnerable and secure implementations so that insecure behavior can be compared directly with protected behavior.
 
-The project not only shows vulnerable behavior, but also includes:
+This project was extended beyond basic vulnerability demos to include access control case studies, security event logging, and automated integration testing.
 
-- secure remediation
-- audit logging
-- user-based isolation
-- reproducible demo scenarios
+## Motivation
 
----
+Many educational security projects focus only on exploitation. This project goes further by showing how vulnerabilities can be reproduced, how secure fixes can be implemented, and how remediation can be verified through logging and automated testing.
 
-## Project Highlights
+The goal of this project is to present a small but structured security practice environment rather than just a collection of vulnerable pages.
 
-This project is designed as a **security-oriented web application demo**, not just a simple file system.
+## Security Objectives
 
-It demonstrates a complete workflow for each security case:
+The main objectives of this project are:
 
-1. implement normal functionality
-2. expose a vulnerable behavior
-3. demonstrate the attack scenario
-4. apply a secure fix
-5. verify the fix
-6. record related audit logs
+- reproduce realistic web security flaws
+- explain the root causes of insecure behavior
+- implement secure remediation strategies
+- verify that fixes work correctly
+- record security-relevant events for later analysis
 
-This makes the project suitable for:
+## Tech Stack
 
-- final year project demonstration
-- GitHub portfolio
-- web security learning
-- academic presentation
+- Java 17
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- Thymeleaf
+- PostgreSQL
+- Maven / Maven Wrapper
+- JUnit-based integration testing
 
----
+## Implemented Modules
 
-## Core Features
+### Existing Modules
 
-### File Management
+#### 1. Broken Access Control
 
-- upload file
-- list files
-- download file
-- delete file
+This case demonstrates how a user could access another user's file by manipulating the file ID.
 
-### User Simulation
-
-- switch between `alice` and `bob` using query parameters
-- user-specific file listing
-- user-specific upload ownership
-
-### Comment System
-
-- add comments
-- display stored comments
-- demonstrate Stored XSS and secure rendering
-
-### Audit Logging
-
-- record successful file operations
-- record denied unauthorized attempts
-- view audit logs in a dedicated page
-
----
-
-## Security Cases
-
-### 1. Broken Access Control
-
-This case demonstrates how a user could access another user's file by manipulating the file id.
-
-- vulnerable behavior: file access handled only by file id
-- attack effect: unauthorized download / deletion
+- vulnerable behavior: file access handled only by file ID
+- attack effect: unauthorized download or deletion
 - fix: ownership validation before sensitive operations
 - result after fix: `403 Forbidden`
 
-### 2. Insecure File Upload
+#### 2. Insecure File Upload
 
 This case demonstrates how a system can accept unexpected or unsafe file types when upload validation is weak.
 
 - vulnerable behavior: uploaded files accepted without strict controls
 - attack effect: unexpected file types stored in the system
-- fix: extension allowlist + file size restriction
+- fix: extension allowlist and file size restriction
 - result after fix: unsupported or oversized files are rejected
 
-### 3. Stored XSS
+#### 3. Stored XSS
 
 This case demonstrates how unescaped stored content can execute malicious script in other users' browsers.
 
@@ -97,326 +66,200 @@ This case demonstrates how unescaped stored content can execute malicious script
 - fix: escaped output rendering
 - result after fix: script content is displayed as plain text
 
----
+### Extended Access Control Case Study
 
-## Security Workflow
+#### 4. Horizontal Unauthorized Access (IDOR-style behavior)
 
-Each vulnerability in this project follows the same structure:
+This case demonstrates how a user can access another user's file by directly modifying the file ID in the request.
 
-- **vulnerable version**
-- **attack demonstration**
-- **secure remediation**
-- **verification after remediation**
-- **audit logging support**
+- vulnerable endpoint: `/vuln/files/{id}`
+- secure endpoint: `/secure/files/{id}`
+- vulnerable result: unauthorized access succeeds
+- secure result: unauthorized access is blocked with `403 Forbidden`
 
-This makes the project easier to explain during presentation and easier to evaluate from a security engineering perspective.
+#### 5. Vertical Privilege Escalation
 
----
+This case demonstrates how a normal user can access admin-only functionality when role checks are missing.
 
-## Tech Stack
+- vulnerable endpoint: `/vuln/admin/audit`
+- secure endpoint: `/secure/admin/audit`
+- vulnerable result: non-admin access succeeds
+- secure result: non-admin access is blocked with `403 Forbidden`
+- admin result: authorized admin access remains allowed
 
-- Java
-- Spring Boot
-- Spring MVC
-- Spring Data JPA
-- Thymeleaf
-- PostgreSQL
-- Maven
+### Supporting Features
 
----
+- file upload and file management
+- comment functionality
+- audit logging
+- security events page: `/security-events`
+- automated integration tests for vulnerable and secure access control behavior
+
+### Access Control Case Study
+
+- vulnerable file access endpoint: `/vuln/files/{id}`
+- secure file access endpoint: `/secure/files/{id}`
+- vulnerable admin audit endpoint: `/vuln/admin/audit`
+- secure admin audit endpoint: `/secure/admin/audit`
+- security events page: `/security-events`
+- automated integration tests for vulnerable and secure access control paths
+
+## Access Control Case Study
+
+This project includes a dedicated access control case study covering both horizontal unauthorized access and vertical privilege escalation.
+
+### Horizontal Unauthorized Access (IDOR-style behavior)
+
+The vulnerable file endpoint allows a user to access another user's file directly by modifying the file ID in the request.
+
+- Vulnerable endpoint: `/vuln/files/{id}`
+- Secure endpoint: `/secure/files/{id}`
+
+Expected behavior:
+
+- vulnerable version: unauthorized access succeeds
+- secure version: unauthorized access is blocked with HTTP 403
+
+### Vertical Privilege Escalation
+
+The vulnerable admin audit endpoint allows a normal user to access admin-related audit information.
+
+- Vulnerable endpoint: `/vuln/admin/audit`
+- Secure endpoint: `/secure/admin/audit`
+
+Expected behavior:
+
+- vulnerable version: non-admin access succeeds
+- secure version: non-admin access is blocked with HTTP 403
+- admin access remains allowed
+
+## Security Events
+
+The project records security-relevant actions and displays them through the Security Events page.
+
+Example logged actions include:
+
+- `VULN_FILE_ACCESS`
+- `SECURE_FILE_ACCESS_DENIED`
+- `SECURE_FILE_ACCESS_ALLOWED`
+- `VULN_ADMIN_AUDIT_ACCESS`
+- `SECURE_ADMIN_AUDIT_DENIED`
+- `SECURE_ADMIN_AUDIT_ALLOWED`
+
+This makes it possible to observe the difference between insecure and protected application behavior.
+
+## Testing
+
+The project includes integration tests to verify both vulnerable and secure behavior.
+
+The automated tests cover:
+
+- vulnerable file access success for unauthorized users
+- secure file access denial for unauthorized users
+- legitimate owner access to protected files
+- vulnerable admin audit access for non-admin users
+- secure admin audit denial for non-admin users
+- secure admin audit access for admin users
+- security event logging for allowed and denied actions
 
 ## Project Structure
 
-```text
-src/main/java/web_vuln_lab/
-├─ WebVulnLabApplication.java
-├─ HomeController.java
-├─ FilesController.java
-├─ CommentsController.java
-├─ AuditLogController.java
-├─ AuditLogService.java
-├─ SecurityConfig.java
-├─ DataInitializer.java
-├─ entity/
-│  ├─ User.java
-│  ├─ FileRecord.java
-│  ├─ Comment.java
-│  └─ AuditLog.java
-└─ repository/
-   ├─ UserRepository.java
-   ├─ FileRecordRepository.java
-   ├─ CommentRepository.java
-   └─ AuditLogRepository.java
-```
+- `src/main/java/web_vuln_lab/`  
+  Main controllers, services, and application logic
 
----
+- `src/main/java/web_vuln_lab/entity/`  
+  JPA entities such as `User`, `FileRecord`, and `AuditLog`
 
-## Database Tables
+- `src/main/java/web_vuln_lab/repository/`  
+  Repository interfaces for database access
 
-This project uses four main tables:
+- `src/main/resources/templates/`  
+  Thymeleaf templates
 
-### `users`
+- `src/test/java/web_vuln_lab/`  
+  Integration tests
 
-Stores simulated users such as `alice` and `bob`.
-
-### `files`
-
-Stores uploaded file metadata:
-
-- owner
-- original file name
-- stored file name
-- content type
-- size
-- storage path
-- created time
-
-### `comments`
-
-Stores user comments for the Stored XSS case.
-
-### `audit_logs`
-
-Stores security-relevant events such as:
-
-- upload
-- download
-- delete
-- denied file access attempts
-
----
+- `docs/`  
+  Project documentation and case study notes
 
 ## How to Run
 
-### 1. Start PostgreSQL
+1. Configure PostgreSQL and update the database settings in `application.properties`.
+2. Make sure the database is running.
+3. Start the application with Maven Wrapper:
 
-Make sure PostgreSQL is installed and running locally.
+   `.\mvnw.cmd spring-boot:run`
 
-### 2. Create the database
+4. Open the application in the browser.
+5. Use different `?user=` values to simulate different users during the access control demonstrations.
 
-Create a database named:
+## Demo Scenarios
 
-```sql
-CREATE DATABASE web_vuln_lab;
-```
+### File Access Control
 
-### 3. Configure `application.properties`
+- vulnerable access: `http://localhost:8080/vuln/files/1?user=bob`
+- secure access: `http://localhost:8080/secure/files/1?user=bob`
+- legitimate owner access: `http://localhost:8080/secure/files/1?user=alice`
 
-Update your database settings in:
+### Admin Audit Access
 
-```text
-src/main/resources/application.properties
-```
+- vulnerable admin access: `http://localhost:8080/vuln/admin/audit?user=bob`
+- secure admin denial: `http://localhost:8080/secure/admin/audit?user=bob`
+- secure admin access: `http://localhost:8080/secure/admin/audit?user=testuser`
 
-Example:
+### Security Events
 
-```properties
-spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/web_vuln_lab?sslmode=disable&connectTimeout=10&socketTimeout=10
-spring.datasource.username=postgres
-spring.datasource.password=YOUR_PASSWORD
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-spring.thymeleaf.cache=false
-server.port=8080
-
-app.upload.dir=uploads
-
-spring.servlet.multipart.max-file-size=5MB
-spring.servlet.multipart.max-request-size=5MB
-```
-
-### 4. Run the application
-
-```bash
-.\mvnw.cmd spring-boot:run
-```
-
-### 5. Open in browser
-
-```text
-http://localhost:8080/home
-```
-
----
-
-## Demo Users
-
-This project simulates two users:
-
-- `alice`
-- `bob`
-
-You can switch views using query parameters:
-
-### File pages
-
-- `/files?user=alice`
-- `/files?user=bob`
-
-### Comment pages
-
-- `/comments?user=alice`
-- `/comments?user=bob`
-
----
-
-## Main Pages
-
-### Home
-
-```text
-/home
-```
-
-### File Management
-
-```text
-/files?user=alice
-/files?user=bob
-```
-
-### Comments
-
-```text
-/comments?user=alice
-/comments?user=bob
-```
-
-### Audit Logs
-
-```text
-/audit-logs
-```
-
----
-
-## Audit Logging
-
-The system records the following events:
-
-- `UPLOAD_FILE`
-- `DOWNLOAD_FILE`
-- `DELETE_FILE`
-- `DOWNLOAD_FILE_DENIED`
-- `DELETE_FILE_DENIED`
-
-These logs improve:
-
-- traceability
-- visibility of sensitive operations
-- visibility of blocked unauthorized attempts
-
----
-
-## Demonstration Summary
-
-### Broken Access Control
-
-- normal file isolation by user view
-- vulnerable direct access by file id
-- fixed ownership validation
-- denied access logged in audit table
-
-### Insecure File Upload
-
-- vulnerable upload behavior
-- fixed type allowlist
-- fixed size restriction
-- invalid files rejected
-
-### Stored XSS
-
-- vulnerable comment rendering using unescaped output
-- script execution demonstration
-- fixed escaped rendering
-- malicious input displayed as plain text
-
----
+- `http://localhost:8080/security-events`
 
 ## Screenshots
 
-You can place screenshots in the `screenshots/` folder and document them here.
+### 1. Project Home Page
 
-Recommended screenshots:
+![Project Home Page](screenshots/home.png)
 
-- home page
-- file list as Alice
-- file list as Bob
-- successful upload
-- 403 forbidden after access control fix
-- file upload validation message
-- comments page after XSS fix
-- audit log page
+### 2. File Upload Validation
 
-Example section:
+![File Upload Validation](screenshots/upload-validation.png)
 
-```md
-## Screenshots
+### 3. Stored XSS Remediation
 
-### Home Page
+![Stored XSS Remediation](screenshots/comments-safe.png)
 
-![Home Page](screenshots/home.png)
+### 4. Vulnerable File Access
 
-### File List (Alice)
+![Vulnerable File Access](screenshots/vuln-file-access.png)
 
-![Files Alice](screenshots/files-alice.png)
+### 5. Secure File Access Denied
 
-### File List (Bob)
+![Secure File Access Denied](screenshots/secure-file-denied.png)
 
-![Files Bob](screenshots/files-bob.png)
+### 6. Vulnerable Admin Audit Access
 
-### Audit Logs
+![Vulnerable Admin Audit Access](screenshots/vuln-admin-access.png)
 
-![Audit Logs](screenshots/audit-logs.png)
-```
+### 7. Security Events Page
 
----
+![Security Events Page](screenshots/security-events.png)
+
+### 8. Integration Test Result
+
+![Integration Test Result](screenshots/test-success.png)
 
 ## Limitations
 
-This project is built for educational demonstration and local academic use.
+This project uses a simplified user simulation model through request parameters such as `?user=alice` and `?user=bob`.
 
-Current limitations include:
+It is designed as a controlled educational lab rather than a production-ready security platform.
 
-- user switching is simulated by query parameters instead of a real authentication session
-- file validation is based on extension and size, not full content scanning
-- comment moderation is not implemented
-- there is no role-based admin dashboard yet
-- the project is not intended for public production deployment
+The current implementation does not include:
 
----
+- full session-based identity handling
+- attribute-based access control
+- multi-tenant authorization policies
+- advanced alerting or dashboard analytics
 
-## Future Improvements
+## Disclaimer
 
-Possible next steps include:
+This project is intended for educational and defensive security practice only.
 
-- integrate real user authentication and authorization
-- replace simulated user switching with session-based login
-- add antivirus or content-based file scanning
-- add role-based access control
-- add security testing automation
-- add CodeQL / Semgrep / ZAP reports
-- improve UI design and usability
-- add more detailed audit analysis dashboard
-
----
-
-## Educational Purpose
-
-This project is intended for:
-
-- local learning
-- web security demonstration
-- portfolio presentation
-- academic evaluation
-
-It should not be deployed as a public production system.
-
----
-
-## Author
-
-Final-year Computer Science project focused on secure cloud file platform design and web vulnerability remediation.
+It is designed to demonstrate vulnerability reproduction, secure remediation, and verification in a controlled environment. It must not be deployed as a public production system in its vulnerable form.
