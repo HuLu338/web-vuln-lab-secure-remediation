@@ -181,7 +181,6 @@ The automated tests cover:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
-
 4. Open the application in the browser.
 5. Use different `?user=` values to simulate different users during the access control demonstrations.
 
