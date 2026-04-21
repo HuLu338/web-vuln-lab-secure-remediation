@@ -95,15 +95,6 @@ This case demonstrates how a normal user can access admin-only functionality whe
 - security events page: `/security-events`
 - automated integration tests for vulnerable and secure access control behavior
 
-### Access Control Case Study
-
-- vulnerable file access endpoint: `/vuln/files/{id}`
-- secure file access endpoint: `/secure/files/{id}`
-- vulnerable admin audit endpoint: `/vuln/admin/audit`
-- secure admin audit endpoint: `/secure/admin/audit`
-- security events page: `/security-events`
-- automated integration tests for vulnerable and secure access control paths
-
 ## Access Control Case Study
 
 This project includes a dedicated access control case study covering both horizontal unauthorized access and vertical privilege escalation.
@@ -188,7 +179,8 @@ The automated tests cover:
 2. Make sure the database is running.
 3. Start the application with Maven Wrapper:
 
-   `.\mvnw.cmd spring-boot:run`
+```powershell
+.\mvnw.cmd spring-boot:run
 
 4. Open the application in the browser.
 5. Use different `?user=` values to simulate different users during the access control demonstrations.
@@ -263,3 +255,4 @@ The current implementation does not include:
 This project is intended for educational and defensive security practice only.
 
 It is designed to demonstrate vulnerability reproduction, secure remediation, and verification in a controlled environment. It must not be deployed as a public production system in its vulnerable form.
+```
