@@ -178,9 +178,6 @@ The automated tests cover:
 1. Configure PostgreSQL and update the database settings in `application.properties`.
 2. Make sure the database is running.
 3. Start the application with Maven Wrapper:
-
-```powershell
-.\mvnw.cmd spring-boot:run
 4. Open the application in the browser.
 5. Use different `?user=` values to simulate different users during the access control demonstrations.
 
@@ -254,4 +251,7 @@ The current implementation does not include:
 This project is intended for educational and defensive security practice only.
 
 It is designed to demonstrate vulnerability reproduction, secure remediation, and verification in a controlled environment. It must not be deployed as a public production system in its vulnerable form.
+
+```
+
 ```
