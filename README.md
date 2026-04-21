@@ -177,7 +177,8 @@ The automated tests cover:
 
 1. Configure PostgreSQL and update the database settings in `application.properties`.
 2. Make sure the database is running.
-3. Start the application with Maven Wrapper:
+3. Start the application with Maven Wrapper by using Powershell:
+   .\mvnw.cmd spring-boot:run
 4. Open the application in the browser.
 5. Use different `?user=` values to simulate different users during the access control demonstrations.
 
